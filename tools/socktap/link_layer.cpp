@@ -17,14 +17,14 @@ boost::optional<std::pair<boost::asio::ip::address, unsigned short>> parse_ip_po
     std::size_t ip_len = ip_port.find_last_of(":");
     if (ip_len == std::string::npos) {
         // error: port not found
-        std::cerr << "Missing port." << std::endl;
+        std::cerr << "[" << ip_port << "] Missing port." << std::endl;
         return opt_ip_port();
     }
 
     std::size_t port = std::strtoul(ip_port.substr(ip_len + 1).c_str(), NULL, 10);
     if (port < 1 || port > 65535) {
         // error: port out of range
-        std::cerr << "Port " << port << " out of range (1-65535)." << std::endl;
+        std::cerr << "[" << ip_port << "] Port " << port << " out of range (1-65535)." << std::endl;
         return opt_ip_port();
     }
 
@@ -32,7 +32,7 @@ boost::optional<std::pair<boost::asio::ip::address, unsigned short>> parse_ip_po
     boost::asio::ip::address ip = boost::asio::ip::address::from_string(ip_port.substr(0, ip_len), ec);
     if (ec) {
         // error: IP-address invalid
-        std::cerr << "Invalid IP-address: " << ec.message() << std::endl;
+        std::cerr << "[" << ip_port << "] Invalid IP-address: " << ec.message() << std::endl;
         return opt_ip_port();
     }
 
@@ -73,7 +73,6 @@ create_link_layer(boost::asio::io_service& io_service, const EthernetDevice& dev
                 }
             }
         }
-
 
         if (vm.count("tcp-accept")) {
             for (const std::string& ip_port : vm["tcp-accept"].as<std::vector<std::string>>()) {
