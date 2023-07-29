@@ -1,7 +1,6 @@
 #include "tcp_link.hpp"
 #include <vanetza/access/data_request.hpp>
 #include <vanetza/net/ethernet_header.hpp>
-#include <boost/asio/ip/multicast.hpp>
 #include <boost/bind/bind.hpp>
 #include <iostream>
 
@@ -12,16 +11,6 @@ TcpLink::TcpLink(boost::asio::io_service& io_service) :
     io_service_(&io_service)
 {
 
-}
-
-TcpLink::~TcpLink()
-{
-    // for (auto &ts : sockets_) {
-    //     delete ts;
-    // }
-    for (auto &acceptor : acceptors_) {
-        delete acceptor.second;
-    }
 }
 
 void TcpLink::indicate(IndicationCallback cb)
@@ -62,15 +51,16 @@ void TcpLink::connect(ip::tcp::endpoint ep)
 
 void TcpLink::accept(ip::tcp::endpoint ep)
 {
-    if (!acceptors_[ep]) {
-        acceptors_[ep] = new ip::tcp::acceptor(*io_service_, ep);
+
+    if (acceptors_.count(ep) == 0) {
+        acceptors_.find(ep)->second = ip::tcp::acceptor(*io_service_, ep);
     }
 
     TcpSocket ts(*io_service_, callback_);
     boost::system::error_code ec;
     std::cout << "Accept connetions at " << ep.address().to_string() << ":" << ep.port() << std::endl;
 
-    acceptors_[ep]->async_accept(
+    acceptors_.find(ep)->second.async_accept(
         ts.socket(),
         boost::bind(
             &TcpLink::accept_handler,
@@ -81,16 +71,10 @@ void TcpLink::accept(ip::tcp::endpoint ep)
         )
     );
 
-    // acceptors_[ep]->async_accept(
-
-    // );
-
-
 }
 
-void TcpLink::accept_handler(boost::system::error_code& ec, TcpSocket ts, ip::tcp::endpoint ep)
+void TcpLink::accept_handler(boost::system::error_code& ec, TcpSocket& ts, ip::tcp::endpoint ep)
 {
-    std::cout << "Accepting ..." << std::endl;
     sockets_.push_back(std::move(ts));
     ts.do_receive();
     ts.connected(true);
@@ -171,6 +155,4 @@ void TcpSocket::connected(bool b)
 {
     is_connected_ = b;
 }
-
-
 
